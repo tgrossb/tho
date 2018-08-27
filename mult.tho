@@ -1,0 +1,22 @@
+// Set up initial variables
+sto 0xc b1
+sto 0xd 0  // Product
+sto 0xe 5  // x
+sto 0xf 7  // y
+
+// Perform the multiplication
+// First, increment the product by y
+lda 0xd
+add 0xf
+sta 0xd
+
+// Next, decrement x
+lda 0xe
+sub 0xc
+
+// If x is not 0, jump back to the multiplication
+jnz 4
+
+// Once x is zero, it will print and exit
+out
+hlt

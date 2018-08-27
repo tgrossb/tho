@@ -1,0 +1,12 @@
+## Here is an example for Tho.
+
+syntax "tho" "\.tho$"
+magic "Tho "
+comment "//"
+
+icolor brightblue "^[[:space:]]*\<(LDA|ADD|SUB|STA|OUT|JMP|NOP|HLT|STO|JIC|JIZ|JNC|JNZ)\>"
+color yellow "([0-9]+[ \t]?)+"
+color green "(b[01]+[ \t]?)+"
+color cyan "(0x[0-9|a-f]+[ \t]?)+"
+color brightmagenta "//.*"
+color ,green "[[:space:]]+$"
