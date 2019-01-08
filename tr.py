@@ -26,7 +26,9 @@ BOLD = '\033[1m'
 BLINK = '\033[5m'
 
 CHECK = u'\u2713'
+BOLD_CHECK = u'\u2714'
 X = u'\u2717'
+BOLD_X = u'\u2718'
 
 LAST = '\033[F'
 
@@ -72,9 +74,9 @@ def calculateFlags(highlights):
 	zeroFlag = newZeroFlag
 	carryFlag = newCarryFlag
 
-
+previousLine = ""
 def simulate(inFile, step, verbose):
-	global aRegister, memory, zeroFlag, carryFlag
+	global aRegister, memory, zeroFlag, carryFlag, previousLine
 
 	byteLine = inFile.readlines()[0]
 
@@ -87,7 +89,6 @@ def simulate(inFile, step, verbose):
 		print("-" * (longestCmdIndex + 147))
 
 	commandIndex = 0
-	previousLine = ""
 	while commandIndex < len(byteLine)/2:
 		highlight = [NORMAL] * 21
 
@@ -113,7 +114,6 @@ def simulate(inFile, step, verbose):
 		elif cmd == STO:
 			memory[p1] = p2
 			highlight[p1+2] = GREEN
-#			print(highlight)
 
 		# ADD xxxx 0000 0000  =>  Add the value at memory address xxxx to the a register and calculate flags
 		elif cmd == ADD:
@@ -136,28 +136,28 @@ def simulate(inFile, step, verbose):
 
 		# JIC xxxx 0000 0000  =>  Move the program counter to xxxx if the carry flag is set
 		elif cmd == JIC:
-			highlight[-1] = BLUE
+			highlight[-2] = BLUE
 			if carryFlag:
 				nextIndex = p1
 				highlight[0] = YELLOW
 
 		# JNC xxxx 0000 0000  =>  Move the program counter to xxxx if the carry flag is not set
 		elif cmd == JNC:
-			highlight[-1] = BLUE
+			highlight[-2] = BLUE
 			if not carryFlag:
 				nextIndex = p1
 				highlight[0] = YELLOW
 
 		# JIZ xxxx 0000 0000  =>  Move the program counter to xxxx if the zero flag is set
 		elif cmd == JIZ:
-			highlight[-2] = BLUE
+			highlight[-3] = BLUE
 			if zeroFlag:
 				nextIndex = p1
 				highlight[0] = YELLOW
 
 		# JNZ xxxx 0000 0000  =>  Move the program counter to xxxx if the zero flag is not set
 		elif cmd == JNZ:
-			highlight[-2] = BLUE
+			highlight[-3] = BLUE
 			if not zeroFlag:
 				nextIndex = p1
 				highlight[0] = YELLOW
@@ -169,7 +169,7 @@ def simulate(inFile, step, verbose):
 
 		# HLT 0000 0000 0000  =>  Exit the program
 		elif cmd == HLT:
-			print("FINISHED")
+			print(LAST + "HALT REACHED")
 			sys.exit(0)
 
 		# NOP 0000 0000 0000  =>  Do nothing
@@ -187,11 +187,9 @@ def simulate(inFile, step, verbose):
 			p1Str = "0x{0:X}".format(p1) if cmd in hexFirstParam else "{0}".format(p1)
 
 			# Command index
-			line += BOLD + "|" + NORMAL + " "
-#			print(BOLD + "|" + NORMAL + " ", end = '')
-			line += color("{0: <{lci}}".format(commandIndex, lci = longestCmdIndex), highlight[0])
-			line += " " + BOLD + "|" + NORMAL + "  "
-#			print(" " + BOLD + "|" + NORMAL + "  ", end = '')
+			line += BOLD + "|" + NORMAL
+			line += color(" {0: <{lci}} ".format(commandIndex, lci = longestCmdIndex), highlight[0])
+			line += BOLD + "|" + NORMAL + "  "
 
 			# Command and params
 			line += "{0}  {1: <3}  {2: <3}  {3: <3}  {4}|{5}".format(cmdStrs[cmd], p1Str, p2, p3, BOLD, NORMAL)
@@ -200,14 +198,10 @@ def simulate(inFile, step, verbose):
 			line += color(str(aRegister).center(5), highlight[1])
 			line += BOLD + "|" + NORMAL
 
-#			print("{0}{1: <{lci}}{n}:  {2}  {3: <3}  {4: <3} {5: <3}  |".format(highlight[0], commandIndex, cmdStrs[cmd], p1Str, p2, p3, lci = longestCmdIndex, n = NORMAL), end = '')
-#			print("{0}{1}{n}|".format(highlight[1], str(aRegister).center(5), n = NORMAL), end = '')
-
 			# Memory addresses
 			for memIndex in range(len(memory)):
 				line += color(str(memory[memIndex]).center(5), highlight[memIndex+2])
 				line += "|" if memIndex < len(memory)-1 else BOLD + "|" + NORMAL
-#				print("{0}{1}{n}|".format(highlight[memIndex+2], str(memory[memIndex]).center(5), n = NORMAL), end = '')
 
 			# Zero flag
 			line += color((CHECK if zeroFlag else X).center(5), highlight[-3]) + "|"
@@ -215,12 +209,10 @@ def simulate(inFile, step, verbose):
 			# Carry flag
 			line += color((CHECK if carryFlag else X).center(5), highlight[-2])
 			line += BOLD + "|" + NORMAL
-#			print("{0}{1}{n}|{2}{3}{n}|".format(highlight[-3], (CHECK if zeroFlag else X).center(5), highlight[-2], (CHECK if carryFlag else X).center(5), n = NORMAL), end = '')
 
 			if cmd == OUT:
 				line += color(str(aRegister).center(5), highlight[-1])
 				line += BOLD + "|" + NORMAL
-#				print("{0}{1}{n}|".format(highlight[-1], str(aRegister).center(5), n = NORMAL))
 			else:
 				line += BOLD + "     |" + NORMAL
 
@@ -234,13 +226,16 @@ def simulate(inFile, step, verbose):
 
 		if step:
 			input("")
+		elif verbose:
+			print()
 
 
-def color(text, color, boldColors = [GREEN, BLUE, YELLOW], blinkColors = [GREEN], end = ''):
+def color(text, color, boldColors = [GREEN, BLUE, YELLOW], blinkColors = [GREEN, YELLOW], end = ''):
 	colorMods = ""
 
 	if color in boldColors:
 		colorMods += BOLD
+		text = text.replace(CHECK, BOLD_CHECK).replace(X, BOLD_X)
 	if color in blinkColors:
 		colorMods += BLINK
 
@@ -261,5 +256,8 @@ if __name__ == "__main__":
 		args = parseArgs()
 		main(args)
 	except KeyboardInterrupt:
-		print("Exiting prematurely")
+		if args.verbose or args.step:
+			print(LAST + previousLine.replace(BLINK, '') + "\nExiting prematurely")
+		else:
+			print("\nExiting prematurely")
 		sys.exit(0)
