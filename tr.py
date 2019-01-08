@@ -28,6 +28,8 @@ BLINK = '\033[5m'
 CHECK = u'\u2713'
 X = u'\u2717'
 
+LAST = '\033[F'
+
 cmdStrs = ["-", "LDA", "STA", "STO", "ADD", "SUB", "JMP", "JIC", "JNC", "JIZ", "JNZ", "OUT", "HLT", "NOP"]
 
 hexFirstParam = [LDA, STA, STO, ADD, SUB]
@@ -85,6 +87,7 @@ def simulate(inFile, step, verbose):
 		print("-" * (longestCmdIndex + 147))
 
 	commandIndex = 0
+	previousLine = ""
 	while commandIndex < len(byteLine)/2:
 		highlight = [NORMAL] * 21
 
@@ -177,44 +180,52 @@ def simulate(inFile, step, verbose):
 			print("Unrecognized operation '" + cmd + "'")
 
 		if verbose or step:
+			if len(previousLine) > 0:
+				print(LAST *2 + previousLine.replace(BLINK, ''))
+
+			line = ""
 			p1Str = "0x{0:X}".format(p1) if cmd in hexFirstParam else "{0}".format(p1)
 
 			# Command index
-			print(BOLD + "|" + NORMAL + " ", end = '')
-			printColored("{0: <{lci}}".format(commandIndex, lci = longestCmdIndex), highlight[0])
-			print(" " + BOLD + "|" + NORMAL + "  ", end = '')
+			line += BOLD + "|" + NORMAL + " "
+#			print(BOLD + "|" + NORMAL + " ", end = '')
+			line += color("{0: <{lci}}".format(commandIndex, lci = longestCmdIndex), highlight[0])
+			line += " " + BOLD + "|" + NORMAL + "  "
+#			print(" " + BOLD + "|" + NORMAL + "  ", end = '')
 
 			# Command and params
-			print("{0}  {1: <3}  {2: <3}  {3: <3}  {4}|{5}".format(cmdStrs[cmd], p1Str, p2, p3, BOLD, NORMAL), end = '')
+			line += "{0}  {1: <3}  {2: <3}  {3: <3}  {4}|{5}".format(cmdStrs[cmd], p1Str, p2, p3, BOLD, NORMAL)
 
 			# Register
-			printColored(str(aRegister).center(5), highlight[1])
-			print(BOLD + "|" + NORMAL, end='')
+			line += color(str(aRegister).center(5), highlight[1])
+			line += BOLD + "|" + NORMAL
 
 #			print("{0}{1: <{lci}}{n}:  {2}  {3: <3}  {4: <3} {5: <3}  |".format(highlight[0], commandIndex, cmdStrs[cmd], p1Str, p2, p3, lci = longestCmdIndex, n = NORMAL), end = '')
 #			print("{0}{1}{n}|".format(highlight[1], str(aRegister).center(5), n = NORMAL), end = '')
 
 			# Memory addresses
 			for memIndex in range(len(memory)):
-				printColored(str(memory[memIndex]).center(5), highlight[memIndex+2])
-				print("|" if memIndex < len(memory)-1 else BOLD + "|" + NORMAL, end = '')
+				line += color(str(memory[memIndex]).center(5), highlight[memIndex+2])
+				line += "|" if memIndex < len(memory)-1 else BOLD + "|" + NORMAL
 #				print("{0}{1}{n}|".format(highlight[memIndex+2], str(memory[memIndex]).center(5), n = NORMAL), end = '')
 
 			# Zero flag
-			printColored((CHECK if zeroFlag else X).center(5), highlight[-3])
-			print("|", end = '')
+			line += color((CHECK if zeroFlag else X).center(5), highlight[-3]) + "|"
 
 			# Carry flag
-			printColored((CHECK if carryFlag else X).center(5), highlight[-2])
-			print(BOLD + "|" + NORMAL, end = '')
+			line += color((CHECK if carryFlag else X).center(5), highlight[-2])
+			line += BOLD + "|" + NORMAL
 #			print("{0}{1}{n}|{2}{3}{n}|".format(highlight[-3], (CHECK if zeroFlag else X).center(5), highlight[-2], (CHECK if carryFlag else X).center(5), n = NORMAL), end = '')
 
 			if cmd == OUT:
-				printColored(str(aRegister).center(5), highlight[-1])
-				print(BOLD + "|" + NORMAL)
+				line += color(str(aRegister).center(5), highlight[-1])
+				line += BOLD + "|" + NORMAL
 #				print("{0}{1}{n}|".format(highlight[-1], str(aRegister).center(5), n = NORMAL))
 			else:
-				print(BOLD + "     |" + NORMAL)
+				line += BOLD + "     |" + NORMAL
+
+			print(line)
+			previousLine = line
 
 		elif cmd == OUT:
 			print("A REGISTER OUTPUT: " + str(aRegister))
@@ -225,7 +236,7 @@ def simulate(inFile, step, verbose):
 			input("")
 
 
-def printColored(text, color, boldColors = [GREEN, BLUE, YELLOW], blinkColors = [GREEN], end = ''):
+def color(text, color, boldColors = [GREEN, BLUE, YELLOW], blinkColors = [GREEN], end = ''):
 	colorMods = ""
 
 	if color in boldColors:
@@ -233,7 +244,7 @@ def printColored(text, color, boldColors = [GREEN, BLUE, YELLOW], blinkColors = 
 	if color in blinkColors:
 		colorMods += BLINK
 
-	print(color + colorMods + text + NORMAL, end = end)
+	return color + colorMods + text + NORMAL
 
 
 
