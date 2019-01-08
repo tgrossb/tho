@@ -1,0 +1,9 @@
+#!/bin/bash
+
+fullName="$1"
+baseName="${fullName%.*}"
+assembled="bin/$baseName"
+assembled+=".th"
+
+./ta.py --bin bin "$fullName"
+./tr.py "$assembled" -s

@@ -1,0 +1,38 @@
+// Set up initial variables
+sto 0xb 1  // Used for decrementing and incrementing
+sto 0xc 5  // The number of additional terms to generate
+sto 0xd 1  // The n-1 th term
+sto 0xe 1  // The nth term
+sto 0xf 0  // A swap memory location
+
+// Print the first two terms
+lda 0xd
+out
+
+lda 0xe
+out
+
+// Add the past terms and the current term store it in the swap memory to swap with the last term
+lda 0xe
+add 0xd
+sta 0xf
+
+lda 0xe
+sta 0xd
+
+lda 0xf
+sta 0xe
+
+// Print the current term
+out
+
+// Decrement the term counter
+lda 0xc
+sub 0xb
+sta 0xc
+
+// If the term counter is not 0, keep going
+jnz 9
+
+// Once the term counter is zero, exit
+hlt

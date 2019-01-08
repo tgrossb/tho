@@ -1,5 +1,5 @@
 // Set up initial variables
-sto 0xc b1
+sto 0xc 1  // Used for decrementing
 sto 0xd 0  // Product
 sto 0xe 5  // x
 sto 0xf 7  // y
@@ -13,10 +13,12 @@ sta 0xd
 // Next, decrement x
 lda 0xe
 sub 0xc
+sta 0xe
 
 // If x is not 0, jump back to the multiplication
 jnz 4
 
-// Once x is zero, it will print and exit
+// Once x is zero, load the product, print it, and exit
+lda 0xd
 out
 hlt
